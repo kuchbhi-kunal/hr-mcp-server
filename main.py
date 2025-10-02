@@ -1,9 +1,22 @@
 from mcp.server.fastmcp import FastMCP
-from typing import List
+from typing import List, Dict, Any
 
-employee_leaves = {
-    "Kunal": {"balance": 18, "history": ["2024-12-25", "2025-01-01"]},
-    "Rohit": {"balance": 20, "history": []}
+# Modified employee_leaves to include more HR-relevant fields
+employee_leaves: Dict[str, Dict[str, Any]] = {
+    "Kunal": {
+        "balance": 18,
+        "history": ["2024-12-25", "2025-01-01"],
+        "department": "Engineering",
+        "manager": "Anya",
+        "sick_leave_policy": "3-day max without doctor's note"
+    },
+    "Rohit": {
+        "balance": 20,
+        "history": [],
+        "department": "Sales",
+        "manager": "Brian",
+        "sick_leave_policy": "2-day max without doctor's note"
+    }
 }
 
 mcp = FastMCP("Shelton")
@@ -44,6 +57,51 @@ def get_leave_history(employee_name: str) -> str:
         return f"Leave history for {employee_name}: {history}"
     return "Employee not found."
 
+# ----------------------------------------------------------------------
+## New HR Functions
+# ----------------------------------------------------------------------
+
+@mcp.tool()
+def get_all_employees() -> str:
+    """Return a list of all employees managed by the system."""
+    names = list(employee_leaves.keys())
+    return "The current employees are: " + ", ".join(names)
+
+@mcp.tool()
+def check_employee_data(employee_name: str) -> str:
+    """
+    Retrieve key departmental and managerial data for an employee.
+    """
+    data = employee_leaves.get(employee_name)
+    if data:
+        department = data.get("department", "N/A")
+        manager = data.get("manager", "N/A")
+        return f"{employee_name} is in the {department} department and reports to {manager}."
+    return "Employee not found."
+
+@mcp.tool()
+def process_sick_leave_with_policy(employee_name: str, num_days: int) -> str:
+    """
+    Apply sick leave and return the employee's specific sick leave policy.
+    This function simulates a policy check during sick leave application.
+    """
+    data = employee_leaves.get(employee_name)
+    if not data:
+        return "Employee not found."
+
+    policy = data.get("sick_leave_policy", "No specific policy on file.")
+
+    # A more sophisticated application would involve date tracking, but for this example:
+    if data['balance'] < num_days:
+        return f"Insufficient leave balance for sick leave. Requested {num_days} day(s) but only have {data['balance']}. Policy: {policy}"
+
+    data['balance'] -= num_days
+    # Note: Sick leave dates would typically be added to history, but we skip that here for brevity.
+
+    return f"Sick leave applied for {num_days} day(s). New balance: {data['balance']}. **Sick Leave Policy:** {policy}"
+
+# ----------------------------------------------------------------------
+
 @mcp.resource("greeting://{name}")
 def get_greeting(name: str) -> str:
     """Get a personalized greeting"""
@@ -51,17 +109,17 @@ def get_greeting(name: str) -> str:
 
 @mcp.tool()
 def wish_happy_diwali() -> str:
+    """Wish Happy Diwali with a simple rangoli ASCII art."""
     rangoli = """
         * * * * *
-      *           *
-    *    @     @    *
-  *   @   #   #   @   *
+      * *
+    * @     @    *
+  * @   #   #   @   *
 * @   #   0   0   #   @ *
-  *   @   #   #   @   *
-    *    @     @    *
-      *           *
+  * @   #   #   @   *
+    * @     @    *
+      * *
         * * * * *
-
     """
     return rangoli
 
